@@ -90,14 +90,15 @@ static void MX_ADC3_Init(void);
 double t = 0;
 double dt = 55.0 / 48000.0;
 
-LPC_DATA lpcdat;
-LPC_FILTER lpcfilt;
-float lpcInData[256];
-float lpcCoeffs[64];
-float lpcPulseInL[256];
-float lpcPulseInR[256];
-float lpcOutBufL[256];
-float lpcOutBufR[256];
+float X[256];
+float Y[256];
+float R[256];
+float window[256];
+unsigned char pos;  
+unsigned int delta;
+unsigned int phase;
+float vocBufIn[256];
+float vocBufOut[256];
 
 void __attribute__((section("ITCMRAM"))) processBlock()
 {
@@ -110,33 +111,42 @@ void __attribute__((section("ITCMRAM"))) processBlock()
   int32_t *wavbuf3 = codecGetTx3Ptr();
 	float to_int = (int)1<<22;
 	
-	float allEnerge = 0;
-	for (int i = 0;i < numSamples;i += 2)
+	for (int i = 0;i < 512;i += 2)
 	{
-		float v = (float)(recbuf1[i+0]+recbuf1[i+1])/to_int*0.01;
-		lpcInData[i>>1] = v;
-		allEnerge += v*v;
+		vocBufIn[i>>1]=(recbuf1[i+0]+recbuf1[i+1])/to_int;
 	}
-	allEnerge /= 256.0;
-	allEnerge = sqrtf(allEnerge);
 	
-	float energe2 = LPC_ProcDurbin(&lpcdat,lpcInData,lpcCoeffs,256,16);
-	
-	for (int i = 0;i < 256;++i)
+	float *src = vocBufIn;              //input
+	float *dst = vocBufOut;                   //output
+	for(int i=0; i<256; i++)               // loop over samples
 	{
-		t += dt*2.0;
-		//lpcPulseInL[i] = 0.005*(int)t;
-		//lpcPulseInR[i] = 0.005*(int)t;
-		lpcPulseInL[i] = 0.01*(rand()%10000)/10000.0*(rand()%2?1:-1);
-		lpcPulseInR[i] = 0.01*(rand()%10000)/10000.0*(rand()%2?1:-1);
-		t -= 2.0*(int)t;
+    X[pos] =  *src++;
+    
+    unsigned char rd = pos;
+    for(int lag=0; lag<128; lag++)  R[lag] = R[lag] * 0.9975f + 0.0025f * X[pos] * X[rd--]; //leaky autocorrelation
+
+    phase += delta;             // wrapped phase
+    if(phase < delta)           // cheap pitch synchronous operation
+    {
+        unsigned char wy = pos;                          //output write position
+        const float scale = 1.0f/sqrtf(R[0] + 0x1p-10f); //gain correction
+        for(int k=1; k<128; k++)  Y[wy++] += R[128-k] * window[k] * scale;  //add backwards
+        for(int k=0; k<128; k++)  Y[wy++] += R[k] * window[k+128] * scale;  //add forward
+    }
+    *dst++ = Y[pos];              //copy output sample
+    Y[pos++] = 0.0f;              //clear output sample in ringbuffer
 	}
-	LPC_FilterPredictStereo(&lpcfilt,lpcPulseInL,lpcPulseInR,lpcOutBufL,lpcOutBufR,lpcCoeffs,256,16);
 	
-	for (int i = 0,j=0;i < 256;++i,j+=2)
+	for (int i = 0;i < 512;i += 2)
 	{
-		wavbuf1[j+0] = lpcOutBufL[i]*to_int*energe2*10.0;
-		wavbuf1[j+1] = lpcOutBufR[i]*to_int*energe2*10.0;
+		wavbuf1[i+0] = vocBufOut[i>>1]*to_int*0.05;
+		wavbuf1[i+1] = vocBufOut[i>>1]*to_int*0.05;
+	}
+	
+	for (int i = 0;i < 512;i += 2)
+	{
+		wavbuf2[i+0]=recbuf2[i+0];
+		wavbuf2[i+1]=recbuf2[i+1];
 	}
 }
 
@@ -194,9 +204,17 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-	LPC_Init(&lpcdat);
-	LPC_FilterInit(&lpcfilt);
-
+  memset(X,0,sizeof(X));
+  memset(Y,0,sizeof(X));
+  memset(R,0,sizeof(X));
+  phase = 0;
+  delta = 220.0f * exp2f((60-69)/12.0f) * 0x1p32f / 48000.0f;
+  pos = 0;
+  for(int i=0; i<256; i++)
+  {
+    window[i] = 0.5f - 0.5f * cosf(i * 0x1p-8f * 2.0f * 3.14159265358979);
+  }
+	
   // HAL_Delay(50);
   codecInit(&hi2s1, &hi2s2, &hi2s3);
   // HAL_Delay(150);
