@@ -1,7 +1,7 @@
 #include "codec.h"
 
 
-#define buflen 512
+#define buflen 768
 #define IIS_TYPE int32_t
 IIS_TYPE i2s1_tx_buf[buflen * 2];
 IIS_TYPE i2s1_rx_buf[buflen * 2];

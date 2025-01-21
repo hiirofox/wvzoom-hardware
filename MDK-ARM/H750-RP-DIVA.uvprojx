@@ -341,7 +341,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32H750xx</Define>
               <Undefine></Undefine>
-              <IncludePath>../USB_DEVICE/App;../USB_DEVICE/Target;../Core/Inc;../Drivers/STM32H7xx_HAL_Driver/Inc;../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy;../Middlewares/ST/STM32_USB_Device_Library/Core/Inc;../Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc;../Drivers/CMSIS/Device/ST/STM32H7xx/Include;../Drivers/CMSIS/Include;../Drivers/User/Inc;../Middlewares/ST/STM32_USB_Device_Library/Class/MIDI/Inc;..\Drivers\DSP</IncludePath>
+              <IncludePath>../USB_DEVICE/App;../USB_DEVICE/Target;../Core/Inc;../Drivers/STM32H7xx_HAL_Driver/Inc;../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy;../Middlewares/ST/STM32_USB_Device_Library/Core/Inc;../Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc;../Drivers/CMSIS/Device/ST/STM32H7xx/Include;../Drivers/CMSIS/Include;../Drivers/User/Inc;../Middlewares/ST/STM32_USB_Device_Library/Class/MIDI/Inc;../Drivers/DSP</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -693,11 +693,6 @@
           <GroupName>Middlewares/USB_Device_Library</GroupName>
           <Files>
             <File>
-              <FileName>usbd_midi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Middlewares\ST\STM32_USB_Device_Library\Class\MIDI\Src\usbd_midi.c</FilePath>
-            </File>
-            <File>
               <FileName>usbd_core.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c</FilePath>
@@ -717,6 +712,11 @@
               <FileType>1</FileType>
               <FilePath>../Middlewares/ST/STM32_USB_Device_Library/Class/HID/Src/usbd_hid.c</FilePath>
             </File>
+            <File>
+              <FileName>usbd_midi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Middlewares\ST\STM32_USB_Device_Library\Class\MIDI\Src\usbd_midi.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -733,19 +733,9 @@
               <FilePath>..\Drivers\User\Src\printf.c</FilePath>
             </File>
             <File>
-              <FileName>synth.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Drivers\User\Src\synth.c</FilePath>
-            </File>
-            <File>
               <FileName>usart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Drivers\User\Src\usart.c</FilePath>
-            </File>
-            <File>
-              <FileName>usbmidi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Drivers\User\Src\usbmidi.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -756,6 +746,16 @@
               <FileName>lpc.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Drivers\DSP\lpc.c</FilePath>
+            </File>
+            <File>
+              <FileName>synth.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\DSP\synth.c</FilePath>
+            </File>
+            <File>
+              <FileName>midi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\DSP\midi.c</FilePath>
             </File>
           </Files>
         </Group>
