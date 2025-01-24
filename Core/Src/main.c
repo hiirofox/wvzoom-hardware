@@ -87,6 +87,7 @@ static void MX_ADC3_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -116,8 +117,8 @@ void __attribute__((section("ITCMRAM"))) processBlock()
   SynthProcessBlock(&syn, bufl, bufr, buflen/2);
   for (int i = 0, j = 0; i < numSamples; i += 2, j++)
   {
-    wavbuf1[i + 0] = bufl[j] * to_int * 0.1;
-    wavbuf1[i + 1] = bufr[j] * to_int * 0.1;
+    wavbuf1[i + 0] = bufl[j] * to_int * 0.25;
+    wavbuf1[i + 1] = bufr[j] * to_int * 0.25;
   }
 }
 

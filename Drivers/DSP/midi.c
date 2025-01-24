@@ -1,6 +1,6 @@
 #include "midi.h"
 
-#define MidiMsgFifoLen 512
+#define MidiMsgFifoLen 64
 
 midi_msg MidiMsgFifo[MidiMsgFifoLen];
 int midiInPos = 0;
@@ -19,7 +19,7 @@ void USBD_MIDI_DataInHandler(uint8_t *usb_rx_buffer, uint8_t usb_rx_buffer_lengt
         messageByte2 = usb_rx_buffer[3];
         usb_rx_buffer += 4;
         usb_rx_buffer_length -= 4;
-        //uart_printf("\r\nMidi Msg:(%d %d %d) cable:%d code:%d channel:%d", message, messageByte1, messageByte2, cable, code, channel);
+        // uart_printf("\r\nMidi Msg:(%d %d %d) cable:%d code:%d channel:%d", message, messageByte1, messageByte2, cable, code, channel);
 
         if (message == 8 || message == 9) // note
         {
@@ -37,7 +37,7 @@ void USBD_MIDI_DataInHandler(uint8_t *usb_rx_buffer, uint8_t usb_rx_buffer_lengt
             MidiMsgFifo[midiInPos].note = 0;
             MidiMsgFifo[midiInPos].freq = 0.0f;
             MidiMsgFifo[midiInPos].vol = 0.0f;
-            MidiMsgFifo[midiInPos].channel = channel;
+            MidiMsgFifo[midiInPos].channel = channel + messageByte1 * 16;
             MidiMsgFifo[midiInPos].chanVal = messageByte2 / 127.0f;
             midiInPos = (midiInPos + 1) % MidiMsgFifoLen;
         }
