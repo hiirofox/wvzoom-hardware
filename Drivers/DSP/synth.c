@@ -86,34 +86,41 @@ StereoSignal UnisonOscProcSample(UnisonOsc *p,
     float f1 = f;
     if (mode == 0) // sync
     {
-        for (int i = 0; i < p->n; i++)
+        sum.l = OscProcSampleSync(&p->oscl[0], f1, form1, ratio1, form2, ratio2, pitch2, deep, mix) - 0.5;
+        sum.r = sum.l;
+        for (int i = 1; i < p->n; i++)
         {
-            sum.l += OscProcSampleSync(&p->oscl[i], f1, form1, ratio1, form2, ratio2, pitch2, deep, mix);
-            sum.r += OscProcSampleSync(&p->oscr[i], f1, form1, ratio1, form2, ratio2, pitch2, deep, mix);
+            float v = OscProcSampleSync(&p->oscl[i], f1, form1, ratio1, form2, ratio2, pitch2, deep, mix) - 0.5;
+            sum.l += v;
+            sum.r -= v;
             f1 *= p->df;
         }
     }
 
     else if (mode == 1) // fm
     {
-        for (int i = 0; i < p->n; i++)
+        sum.l = OscProcSampleFM(&p->oscl[0], f1, form1, ratio1, form2, ratio2, pitch2, deep, mix) - 0.5;
+        sum.r = sum.l;
+        for (int i = 1; i < p->n; i++)
         {
-            sum.l += OscProcSampleFM(&p->oscl[i], f1, form1, ratio1, form2, ratio2, pitch2, deep, mix);
-            sum.r += OscProcSampleFM(&p->oscr[i], f1, form1, ratio1, form2, ratio2, pitch2, deep, mix);
+            float v = OscProcSampleFM(&p->oscl[i], f1, form1, ratio1, form2, ratio2, pitch2, deep, mix) - 0.5;
+            sum.l += v;
+            sum.r -= v;
             f1 *= p->df;
         }
     }
     else if (mode == 2) // am
     {
-        for (int i = 0; i < p->n; i++)
+        sum.l = OscProcSampleAM(&p->oscl[0], f1, form1, ratio1, form2, ratio2, pitch2, deep, mix) - 0.5;
+        sum.r = sum.l;
+        for (int i = 1; i < p->n; i++)
         {
-            sum.l += OscProcSampleAM(&p->oscl[i], f1, form1, ratio1, form2, ratio2, pitch2, deep, mix);
-            sum.r += OscProcSampleAM(&p->oscr[i], f1, form1, ratio1, form2, ratio2, pitch2, deep, mix);
+            float v = OscProcSampleAM(&p->oscl[i], f1, form1, ratio1, form2, ratio2, pitch2, deep, mix) - 0.5;
+            sum.l += v;
+            sum.r -= v;
             f1 *= p->df;
         }
     }
-    sum.l = sum.l - 0.5 * p->n;
-    sum.r = sum.r - 0.5 * p->n;
     return sum;
 }
 
@@ -209,6 +216,31 @@ float ADSRProcSample(ADSR *p)
     return p->v; // v*v
 }
 
+////////////////////////////////////////////////////////////// lfo
+
+void ResetLFO(LFO *p)
+{
+    p->x = 1.0;
+    p->y = 0.0;
+}
+void LFONormalize(LFO *p)
+{
+    float v = 1.0 / sqrtf(p->x * p->x + p->y * p->y);
+    p->x *= v;
+    p->y *= v;
+}
+void LFOSetFreq(LFO *p, float f)
+{
+    p->f = f;
+}
+float LFOProcSample(LFO *p)
+{
+    float lx = p->x;
+    p->x += p->y * p->f;
+    p->y -= lx * p->f;
+    return p->y + 1.0;
+}
+
 ////////////////////////////////////////////////////////////// synth
 
 void ResetSynth(Synth *p)
@@ -216,10 +248,16 @@ void ResetSynth(Synth *p)
     for (int i = 0; i < MaxPolyNum; i++)
     {
         ResetUnisonOsc(&p->osc[i]);
+        ResetADSR(&p->oscadsr[i]);
+        ResetADSR(&p->svfadsr[i]);
+        ResetSVF(&p->svfl[i]);
+        ResetSVF(&p->svfr[i]);
     }
     p->param.ratio1 = 0.5;
     p->param.form1 = 0.5;
     p->trigPos = 0;
+    ResetLFO(&p->lfo1);
+    ResetLFO(&p->lfo2);
 }
 void SynthProcMidi(Synth *p, midi_msg msg)
 {
@@ -288,7 +326,23 @@ void SynthProcMidi(Synth *p, midi_msg msg)
         }
         else if (msg.channel == 6)
         {
+            int lastmode = p->param.oscmode;
             p->param.oscmode = msg.chanVal * 2.99; // 0,1,2
+            if (lastmode != p->param.oscmode)
+            {
+                if (p->param.oscmode == 0)
+                {
+                    uart_printf("\r\noscmode:sync");
+                }
+                else if (p->param.oscmode == 1)
+                {
+                    uart_printf("\r\noscmode:fm");
+                }
+                else if (p->param.oscmode == 2)
+                {
+                    uart_printf("\r\noscmode:am");
+                }
+            }
         }
         else if (msg.channel == 7)
         {
@@ -305,6 +359,66 @@ void SynthProcMidi(Synth *p, midi_msg msg)
         else if (msg.channel == 10)
         {
             p->param.df = msg.chanVal * 0.01 + 1.0;
+        }
+        else if (msg.channel == 11)
+        {
+            p->param.dpan = msg.chanVal;
+        }
+        else if (msg.channel == 12) // LFO
+        {
+            p->param.lfo1f = (expf((msg.chanVal - 1.0) * 6.0) - expf(-6.0)) * 100.0 / SampleRate;
+        }
+        else if (msg.channel == 13)
+        {
+            p->param.lfo1amount = msg.chanVal * 0.5;
+        }
+        else if (msg.channel == 14)
+        {
+            int lastmode = p->param.lfo1mode;
+            p->param.lfo1mode = msg.chanVal * 2.99;
+            if (lastmode != p->param.lfo1mode)
+            {
+                if (p->param.lfo1mode == 0)
+                {
+                    uart_printf("\r\nlfo1mode:osc1Ratio");
+                }
+                else if (p->param.lfo1mode == 1)
+                {
+                    uart_printf("\r\nlfo1mode:ctof");
+                }
+                else if (p->param.lfo1mode == 2)
+                {
+                    uart_printf("\r\nlfo1mode:osc2Pitch");
+                }
+            }
+        }
+        else if (msg.channel == 15)
+        {
+            p->param.lfo2f = (expf((msg.chanVal - 1.0) * 6.0) - expf(-6.0)) * 100.0 / SampleRate;
+        }
+        else if (msg.channel == 16)
+        {
+            p->param.lfo2amount = msg.chanVal * 0.5;
+        }
+        else if (msg.channel == 17)
+        {
+            int lastmode = p->param.lfo2mode;
+            p->param.lfo2mode = msg.chanVal * 2.99;
+            if (lastmode != p->param.lfo2mode)
+            {
+                if (p->param.lfo2mode == 0)
+                {
+                    uart_printf("\r\nlfo2mode:osc2Ratio");
+                }
+                else if (p->param.lfo2mode == 1)
+                {
+                    uart_printf("\r\nlfo2mode:deep");
+                }
+                else if (p->param.lfo2mode == 2)
+                {
+                    uart_printf("\r\nlfo2mode:mix");
+                }
+            }
         }
 
         else if (msg.channel == 18) // ADSR
@@ -345,7 +459,7 @@ void SynthProcMidi(Synth *p, midi_msg msg)
         }
         else if (msg.channel == 27) // ctof
         {
-            p->param.ctof = expf((msg.chanVal - 1.0) * 12.0);
+            p->param.ctof = (expf((msg.chanVal - 1.0) * 6.0) - expf(-6.0)) / (1.0 - expf(-6.0));
         }
         else if (msg.channel == 28)
         {
@@ -358,6 +472,8 @@ void SynthProcMidi(Synth *p, midi_msg msg)
             UnisonOscSetParam(&p->osc[i], p->param.unison, p->param.df);
             ADSRSetParam(&p->oscadsr[i], p->param.oa, p->param.od, p->param.os, p->param.or); // osc
             ADSRSetParam(&p->svfadsr[i], p->param.fa, p->param.fd, p->param.fs, p->param.fr); // filter
+            LFOSetFreq(&p->lfo1, p->param.lfo1f);
+            LFOSetFreq(&p->lfo2, p->param.lfo2f);
         }
     }
 }
@@ -369,21 +485,59 @@ void SynthProcessBlock(Synth *p, float *bufl, float *bufr, int numSamples)
         SVFCheckStability(&p->svfl[j], 10.0, 0.1); // 形同虚设
         SVFCheckStability(&p->svfr[j], 10.0, 0.1);
     }
-    StereoSignal tmp;
+    LFONormalize(&p->lfo1);
+    LFONormalize(&p->lfo2);
+    float osc1RatioAdd = 0, osc2RatioAdd = 0, osc2PitchAdd = 0, ctofAdd = 0, deepAdd = 0, mixAdd = 0;
     for (int i = 0; i < numSamples; i++)
     {
         float suml = 0, sumr = 0;
+        float lfov1 = LFOProcSample(&p->lfo1) * p->param.lfo1amount;
+        float lfov2 = LFOProcSample(&p->lfo2) * p->param.lfo2amount;
+        osc1RatioAdd = 0, osc2RatioAdd = 0, osc2PitchAdd = 0, ctofAdd = 0, deepAdd = 0, mixAdd = 0;
+        if (p->param.lfo1mode == 0)
+        {
+            osc1RatioAdd = lfov1;
+        }
+        else if (p->param.lfo1mode == 1)
+        {
+            ctofAdd = lfov1;
+        }
+        else if (p->param.lfo1mode == 2)
+        {
+            osc2PitchAdd = lfov1;
+        }
+        if (p->param.lfo2mode == 0)
+        {
+            osc2RatioAdd = lfov2;
+        }
+        else if (p->param.lfo2mode == 1)
+        {
+            deepAdd = lfov2;
+        }
+        else if (p->param.lfo2mode == 2)
+        {
+            mixAdd = lfov2;
+        }
+
         for (int j = 0; j < MaxPolyNum; j++)
         {
-            tmp = UnisonOscProcSample(&p->osc[j], p->freq[j], p->param.form1, p->param.ratio1, p->param.form2, p->param.ratio2, p->param.pitch2, p->param.oscdeep, p->param.oscmix, p->param.oscmode);
+            StereoSignal tmp =
+                UnisonOscProcSample(&p->osc[j], p->freq[j],
+                                    p->param.form1, p->param.ratio1 + osc1RatioAdd,
+                                    p->param.form2, p->param.ratio2 + osc2RatioAdd, p->param.pitch2 + osc2PitchAdd,
+                                    p->param.oscdeep + deepAdd, p->param.oscmix + mixAdd, p->param.oscmode);
             float adsrv = ADSRProcSample(&p->oscadsr[j]);
             float totvol = p->vol[j] * adsrv;
 
             float adsrctof = ADSRProcSample(&p->svfadsr[j]);
-            float ctof = p->param.famount * adsrctof + p->param.ctof;
-            if (ctof > 1.95)
+            float ctof = p->param.famount * adsrctof + p->param.ctof + ctofAdd;
+            if (ctof > 2.5)
             {
-                ctof = 1.95;
+                ctof = 2.5;
+            }
+            else if (ctof < 0)
+            {
+                ctof = 0;
             }
             tmp.l = SVFProcLPFOverSampling(&p->svfl[j], tmp.l, ctof, p->param.reso);
             tmp.r = SVFProcLPFOverSampling(&p->svfr[j], tmp.r, ctof, p->param.reso);
@@ -391,7 +545,8 @@ void SynthProcessBlock(Synth *p, float *bufl, float *bufr, int numSamples)
             sumr += tmp.r * totvol;
         }
 
-        bufl[i] = suml;
-        bufr[i] = sumr;
+        float sum = suml + sumr;
+        bufl[i] = sum - p->param.dpan * (sum - suml);
+        bufr[i] = sum - p->param.dpan * (sum - sumr);
     }
 }

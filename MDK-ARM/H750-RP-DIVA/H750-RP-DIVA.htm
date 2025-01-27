@@ -3,7 +3,7 @@
 <title>Static Call Graph - [H750-RP-DIVA\H750-RP-DIVA.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image H750-RP-DIVA\H750-RP-DIVA.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6220000: Last Updated: Fri Jan 24 16:45:00 2025
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6220000: Last Updated: Mon Jan 27 17:59:48 2025
 <BR><P>
 <H3>Maximum Stack Usage =        552 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -2222,8 +2222,8 @@ Global Symbols
 <P><STRONG><a name="[1e]"></a>PendSV_Handler</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, stm32h7xx_it.o(.text.PendSV_Handler))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32h750xx.o(RESET)
 </UL>
-<P><STRONG><a name="[1a7]"></a>ResetSynth</STRONG> (Thumb, 82 bytes, Stack size 8 bytes, synth_1.o(.text.ResetSynth))
-<BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = ResetSynth &rArr; ResetUnisonOsc
+<P><STRONG><a name="[1a7]"></a>ResetSynth</STRONG> (Thumb, 302 bytes, Stack size 16 bytes, synth_1.o(.text.ResetSynth))
+<BR><BR>[Stack]<UL><LI>Max Depth = 48<LI>Call Chain = ResetSynth &rArr; ResetUnisonOsc
 </UL>
 <BR>[Calls]<UL><LI><a href="#[1a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ResetUnisonOsc
 </UL>
@@ -2242,18 +2242,20 @@ Global Symbols
 <P><STRONG><a name="[1c]"></a>SVC_Handler</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, stm32h7xx_it.o(.text.SVC_Handler))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32h750xx.o(RESET)
 </UL>
-<P><STRONG><a name="[1aa]"></a>SynthProcMidi</STRONG> (Thumb, 1264 bytes, Stack size 16 bytes, synth_1.o(.text.SynthProcMidi))
-<BR><BR>[Stack]<UL><LI>Max Depth = 48<LI>Call Chain = SynthProcMidi &rArr; ResetUnisonOsc
+<P><STRONG><a name="[1aa]"></a>SynthProcMidi</STRONG> (Thumb, 1664 bytes, Stack size 16 bytes, synth_1.o(.text.SynthProcMidi))
+<BR><BR>[Stack]<UL><LI>Max Depth = 176 + Unknown Stack Size
+<LI>Call Chain = SynthProcMidi &rArr; uart_printf &rArr; vsnprintf &rArr; _printf_char_common &rArr; __printf
 </UL>
-<BR>[Calls]<UL><LI><a href="#[1ab]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_expf
+<BR>[Calls]<UL><LI><a href="#[12c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;uart_printf
+<LI><a href="#[1ab]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_expf
 <LI><a href="#[1ac]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_exp2f
 <LI><a href="#[1a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ResetUnisonOsc
 </UL>
 <BR>[Called By]<UL><LI><a href="#[ef]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[1ad]"></a>SynthProcessBlock</STRONG> (Thumb, 1000 bytes, Stack size 112 bytes, synth_1.o(.text.SynthProcessBlock))
-<BR><BR>[Stack]<UL><LI>Max Depth = 176<LI>Call Chain = SynthProcessBlock &rArr; UnisonOscProcSample
+<P><STRONG><a name="[1ad]"></a>SynthProcessBlock</STRONG> (Thumb, 1344 bytes, Stack size 120 bytes, synth_1.o(.text.SynthProcessBlock))
+<BR><BR>[Stack]<UL><LI>Max Depth = 168<LI>Call Chain = SynthProcessBlock &rArr; UnisonOscProcSample
 </UL>
 <BR>[Calls]<UL><LI><a href="#[1ae]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UnisonOscProcSample
 </UL>
@@ -2828,8 +2830,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[14f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_PCD_IRQHandler
 </UL>
 
-<P><STRONG><a name="[1ae]"></a>UnisonOscProcSample</STRONG> (Thumb, 2312 bytes, Stack size 64 bytes, synth_1.o(.text.UnisonOscProcSample))
-<BR><BR>[Stack]<UL><LI>Max Depth = 64<LI>Call Chain = UnisonOscProcSample
+<P><STRONG><a name="[1ae]"></a>UnisonOscProcSample</STRONG> (Thumb, 1702 bytes, Stack size 48 bytes, synth_1.o(.text.UnisonOscProcSample))
+<BR><BR>[Stack]<UL><LI>Max Depth = 48<LI>Call Chain = UnisonOscProcSample
 </UL>
 <BR>[Called By]<UL><LI><a href="#[1ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SynthProcessBlock
 </UL>
@@ -2942,6 +2944,7 @@ Global Symbols
 </UL>
 <BR>[Called By]<UL><LI><a href="#[ef]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 <LI><a href="#[12a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_I2C_MasterRxCpltCallback
+<LI><a href="#[1aa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SynthProcMidi
 </UL>
 
 <P><STRONG><a name="[1df]"></a>uart_setUartHandle</STRONG> (Thumb, 12 bytes, Stack size 0 bytes, printf.o(.text.uart_setUartHandle))

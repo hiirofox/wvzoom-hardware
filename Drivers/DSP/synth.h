@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include "midi.h"
 
+#define SampleRate 46875
+
 typedef struct
 {
     float t1, t2;
@@ -66,6 +68,16 @@ void ADSRSetTrig(ADSR *p, int trig);
 float ADSRProcSample(ADSR *p);
 void ADSRSetParam(ADSR *p, float a, float d, float s, float r);
 
+typedef struct
+{
+    float x, y;
+    float f;
+} LFO;
+void ResetLFO(LFO *p);
+void LFONormalize(LFO *p);        // 单位化数值
+void LFOSetFreq(LFO *p, float f); // f是单位化的
+float LFOProcSample(LFO *p);
+
 #define MaxPolyNum 8
 typedef struct
 {
@@ -75,12 +87,17 @@ typedef struct
     float oscdeep, oscmix;
 
     int unison; // unison
-    float df;
+    float df, dpan;
 
     float oa, od, os, or ;         // oscillator adsr
     float fa, fd, fs, fr, famount; // filter adsr
 
     float ctof, reso; // filter
+
+    float lfo1f, lfo1amount; // lfo
+    int lfo1mode;            // 0:Osc1Ratio 1:ctof 2:Osc2Pitch
+    float lfo2f, lfo2amount; //
+    int lfo2mode;            // 0:Osc2Ratio 1:deep 2:mix
 } SynthParam;
 
 typedef struct
@@ -96,6 +113,8 @@ typedef struct
     ADSR svfadsr[MaxPolyNum];
     SVFilter svfl[MaxPolyNum];
     SVFilter svfr[MaxPolyNum];
+    LFO lfo1;
+    LFO lfo2;
     int trigPos;
 } Synth;
 void ResetSynth(Synth *p);
