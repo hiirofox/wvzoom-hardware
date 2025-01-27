@@ -3,14 +3,16 @@
 /* Input : n elements of time doamin data
    Output: m lpc coefficients, excitation energy */
 
-void LPC_Init(LPC_DATA* pd)
+void LPC_Init(LPC_DATA *pd)
 {
-	for (int i = 0; i < MaxLPCDataLen; ++i)pd->aut[i] = pd->buf[i] = 0;
-	for (int i = 0; i < MaxLPCCoeffsNum; ++i)pd->lpc[i] = 0;
-
+	for (int i = 0; i < MaxLPCDataLen; ++i)
+		pd->aut[i] = pd->buf[i] = 0;
+	for (int i = 0; i < MaxLPCCoeffsNum; ++i)
+		pd->lpc[i] = 0;
 }
 
-float LPC_ProcDurbin(LPC_DATA* pd, const float* data, float* lpci, int n, int m) {
+float LPC_ProcDurbin(LPC_DATA *pd, const float *data, double *lpci, int n, int m)
+{
 	double error = 0.0;
 	double epsilon = 0.0;
 	/*
@@ -19,10 +21,12 @@ float LPC_ProcDurbin(LPC_DATA* pd, const float* data, float* lpci, int n, int m)
 			pd->buf[i] = data[i] + (0.5 - 0.5 * cosf((float)i * 2.0 * 3.141592653589 / n));
 		}*/
 
-		/* Calculate autocorrelation, p+1 lag coefficients */
-	for (int j = 0; j <= m; ++j) {
+	/* Calculate autocorrelation, p+1 lag coefficients */
+	for (int j = 0; j <= m; ++j)
+	{
 		double accumulator = 0.0; // Double for accumulation depth
-		for (int i = j; i < n; ++i) {
+		for (int i = j; i < n; ++i)
+		{
 			accumulator += (double)data[i] * (double)data[i - j];
 		}
 		pd->aut[j] = accumulator;
@@ -33,28 +37,33 @@ float LPC_ProcDurbin(LPC_DATA* pd, const float* data, float* lpci, int n, int m)
 	epsilon = 1e-9 * pd->aut[0] + 1e-10;
 
 	/* Generate LPC coefficients from autocorrelation values */
-	for (int i = 0; i < m; ++i) {
+	for (int i = 0; i < m; ++i)
+	{
 		double reflection = -pd->aut[i + 1];
 
-		if (error < epsilon) {
+		if (error < epsilon)
+		{
 			memset(pd->lpc + i, 0, (m - i) * sizeof(*pd->lpc));
 			break; // Terminate early if error is below the threshold
 		}
 
 		/* Compute reflection coefficient */
-		for (int j = 0; j < i; ++j) {
+		for (int j = 0; j < i; ++j)
+		{
 			reflection -= pd->lpc[j] * pd->aut[i - j];
 		}
 		reflection /= error;
 
 		/* Update LPC coefficients and total error */
 		pd->lpc[i] = reflection;
-		for (int j = 0; j < i / 2; ++j) {
+		for (int j = 0; j < i / 2; ++j)
+		{
 			double temp = pd->lpc[j];
 			pd->lpc[j] += reflection * pd->lpc[i - 1 - j];
 			pd->lpc[i - 1 - j] += reflection * temp;
 		}
-		if (i & 1) { // Odd-indexed case
+		if (i & 1)
+		{ // Odd-indexed case
 			pd->lpc[i / 2] += pd->lpc[i / 2] * reflection;
 		}
 
@@ -65,25 +74,27 @@ float LPC_ProcDurbin(LPC_DATA* pd, const float* data, float* lpci, int n, int m)
 	{
 		const double g = 0.99; // Damping factor
 		double damp = g;
-		for (int j = 0; j < m; ++j) {
+		for (int j = 0; j < m; ++j)
+		{
 			pd->lpc[j] *= damp;
 			damp *= g;
 		}
 	}
 
 	/* Output LPC coefficients as floats */
-	for (int j = 0; j < m; ++j) {
-		lpci[j] = -(float)pd->lpc[j];
+	for (int j = 0; j < m; ++j)
+	{
+		lpci[j] = -(double)pd->lpc[j];
 	}
 
 	/* Return error value to determine the impulse strength later */
 	return (float)error;
 }
-float LPC_ProcBurg(LPC_DATA* pd, const float* x, float* a, int N, int M)
+float LPC_ProcBurg(LPC_DATA *pd, const float *x, float *a, int N, int M)
 {
-	float* b1 = pd->buf;
-	double* b2 = pd->aut;
-	double* aa = pd->lpc;
+	float *b1 = pd->buf;
+	double *b2 = pd->aut;
+	double *aa = pd->lpc;
 
 	// (3)
 
@@ -96,7 +107,7 @@ float LPC_ProcBurg(LPC_DATA* pd, const float* x, float* a, int N, int M)
 	gain /= N;
 	if (gain <= 0)
 	{
-		return 0.0;    // warning empty
+		return 0.0; // warning empty
 	}
 
 	// (9)
@@ -108,7 +119,7 @@ float LPC_ProcBurg(LPC_DATA* pd, const float* x, float* a, int N, int M)
 		b1[j] = b2[j - 1] = x[j];
 	}
 
-	for (int i = 0; ; ++i)
+	for (int i = 0;; ++i)
 	{
 		// (7)
 
@@ -121,7 +132,7 @@ float LPC_ProcBurg(LPC_DATA* pd, const float* x, float* a, int N, int M)
 
 		if (denum <= 0)
 		{
-			return 0.0;    // warning ill-conditioned
+			return 0.0; // warning ill-conditioned
 		}
 
 		a[i] = 2.0 * num / denum;
@@ -137,7 +148,8 @@ float LPC_ProcBurg(LPC_DATA* pd, const float* x, float* a, int N, int M)
 			a[j] = aa[j] - a[i] * aa[i - j - 1];
 		}
 
-		if (i == M - 1) break;
+		if (i == M - 1)
+			break;
 
 		// (8)  Watch out: i -> i+1
 
@@ -156,7 +168,7 @@ float LPC_ProcBurg(LPC_DATA* pd, const float* x, float* a, int N, int M)
 	return gain;
 }
 
-void LPC_FilterInit(LPC_FILTER* filt)
+void LPC_FilterInit(LPC_FILTER *filt)
 {
 	for (int i = 0; i < MaxLPCCoeffsNum; ++i)
 	{
@@ -166,15 +178,16 @@ void LPC_FilterInit(LPC_FILTER* filt)
 	filt->pos = 0;
 }
 
-void LPC_FilterPredictStereo(LPC_FILTER* filt,
-	const float* inl, const float* inr,
-	float* outl, float* outr, float* a,
-	int numSamples, int numCoeffs)
+void LPC_FilterPredictStereo(LPC_FILTER *filt,
+							 const float *inl, const float *inr,
+							 float *outl, float *outr, double *a,
+							 int numSamples, int numCoeffs,
+							 float errorv)
 {
 	for (int i = 0; i < numSamples; ++i)
 	{
-		float suml = 0;
-		float sumr = 0;
+		double suml = 0;
+		double sumr = 0;
 		int start = MaxLPCCoeffsNum + filt->pos;
 		for (int k = 0; k < numCoeffs; ++k)
 		{
@@ -182,22 +195,28 @@ void LPC_FilterPredictStereo(LPC_FILTER* filt,
 			suml += filt->yl[n] * a[k];
 			sumr += filt->yr[n] * a[k];
 		}
-		outl[i] = filt->yl[filt->pos] = inl[i] + suml;
-		outr[i] = filt->yr[filt->pos] = inr[i] + sumr;
-
-		if (filt->yl[filt->pos] > 1.0)filt->yl[filt->pos] = 1.0;
-		if (filt->yl[filt->pos] < -1.0)filt->yl[filt->pos] = -1.0;
-		if (filt->yr[filt->pos] > 1.0)filt->yr[filt->pos] = 1.0;
-		if (filt->yr[filt->pos] < -1.0)filt->yr[filt->pos] = -1.0;
+		filt->yl[filt->pos] = inl[i] * errorv * 0.00005 + suml;
+		filt->yr[filt->pos] = inr[i] * errorv * 0.00005 + sumr;
+		outl[i] = filt->yl[filt->pos] * 50.0;
+		outr[i] = filt->yr[filt->pos] * 50.0;
+		if (filt->yl[filt->pos] > 1.0)
+			filt->yl[filt->pos] = 1.0;
+		else if (filt->yl[filt->pos] < -1.0)
+			filt->yl[filt->pos] = -1.0;
+		if (filt->yr[filt->pos] > 1.0)
+			filt->yr[filt->pos] = 1.0;
+		else if (filt->yr[filt->pos] < -1.0)
+			filt->yr[filt->pos] = -1.0;
 
 		filt->pos++;
-		if (filt->pos >= MaxLPCCoeffsNum)filt->pos = 0;
+		if (filt->pos >= MaxLPCCoeffsNum)
+			filt->pos = 0;
 	}
 }
-void LPC_FilterCompensationStereo(LPC_FILTER* filt,
-	const float* inl, const float* inr,
-	float* outl, float* outr, float* a,
-	int numSamples, int numCoeffs)
+void LPC_FilterCompensationStereo(LPC_FILTER *filt,
+								  const float *inl, const float *inr,
+								  float *outl, float *outr, float *a,
+								  int numSamples, int numCoeffs)
 {
 	for (int i = 0; i < numSamples; ++i)
 	{
@@ -215,6 +234,7 @@ void LPC_FilterCompensationStereo(LPC_FILTER* filt,
 		outl[i] = inl[i] - suml;
 		outr[i] = inr[i] - sumr;
 		filt->pos++;
-		if (filt->pos >= MaxLPCCoeffsNum)filt->pos = 0;
+		if (filt->pos >= MaxLPCCoeffsNum)
+			filt->pos = 0;
 	}
 }

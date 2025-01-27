@@ -87,7 +87,6 @@ static void MX_ADC3_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -96,8 +95,14 @@ static void MX_I2C1_Init(void);
 #define buflen 768
 
 Synth syn;
-float bufl[buflen/2];
-float bufr[buflen/2];
+float recl[buflen / 2];
+float recr[buflen / 2];
+float bufl[buflen / 2];
+float bufr[buflen / 2];
+
+float hpvl = 0; // 给audio in加个高通用的
+float hpvr = 0;
+float hpctof = 50 / 48000;
 
 void __attribute__((section("ITCMRAM"))) processBlock()
 {
@@ -114,7 +119,17 @@ void __attribute__((section("ITCMRAM"))) processBlock()
   int32_t *recbuf3 = codecGetRx3Ptr();
   int32_t *wavbuf3 = codecGetTx3Ptr();
   float to_int = (int)1 << 22;
-  SynthProcessBlock(&syn, bufl, bufr, buflen/2);
+  float div_to_int = 1.0 / to_int;
+  for (int i = 0, j = 0; i < numSamples; i += 2, j++)
+  {
+    float vl = recbuf1[i + 0] * div_to_int;
+    float vr = recbuf1[i + 1] * div_to_int;
+    hpvl += hpctof * (vl - hpvl);
+    hpvr += hpctof * (vr - hpvr);
+    recl[j] = vl - hpvl;
+    recr[j] = vr - hpvr;
+  }
+  SynthProcessBlock(&syn, recl, recr, bufl, bufr, buflen / 2);
   for (int i = 0, j = 0; i < numSamples; i += 2, j++)
   {
     wavbuf1[i + 0] = bufl[j] * to_int * 0.25;

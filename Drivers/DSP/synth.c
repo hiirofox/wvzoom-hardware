@@ -258,6 +258,10 @@ void ResetSynth(Synth *p)
     p->trigPos = 0;
     ResetLFO(&p->lfo1);
     ResetLFO(&p->lfo2);
+    for (int i = 0; i < MaxLPCBufLen; ++i)
+    {
+        p->lpcbuf[i] = 0;
+    }
 }
 void SynthProcMidi(Synth *p, midi_msg msg)
 {
@@ -478,7 +482,7 @@ void SynthProcMidi(Synth *p, midi_msg msg)
     }
 }
 
-void SynthProcessBlock(Synth *p, float *bufl, float *bufr, int numSamples)
+void SynthProcessBlock(Synth *p, float *recl, float *recr, float *bufl, float *bufr, int numSamples)
 {
     for (int j = 0; j < MaxPolyNum; j++)
     {
@@ -549,4 +553,10 @@ void SynthProcessBlock(Synth *p, float *bufl, float *bufr, int numSamples)
         bufl[i] = sum - p->param.dpan * (sum - suml);
         bufr[i] = sum - p->param.dpan * (sum - sumr);
     }
+
+    // effects
+    memcpy(&p->lpcbuf[0], &p->lpcbuf[numSamples], MaxLPCBufLen - numSamples);
+    memcpy(&p->lpcbuf[MaxLPCBufLen - numSamples], &recl[0], numSamples);
+    float errv = LPC_ProcDurbin(&p->lpc, p->lpcbuf, p->lpcCoeffs, MaxLPCBufLen, 16);
+    LPC_FilterPredictStereo(&p->lpcfilt, bufl, bufr, bufl, bufr, p->lpcCoeffs, numSamples, 16, errv);
 }

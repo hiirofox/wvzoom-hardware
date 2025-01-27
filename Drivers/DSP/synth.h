@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include "midi.h"
+#include "lpc.h"
 
 #define SampleRate 46875
 
@@ -116,7 +117,13 @@ typedef struct
     LFO lfo1;
     LFO lfo2;
     int trigPos;
+
+#define MaxLPCBufLen 2048
+    float lpcbuf[MaxLPCBufLen];
+    LPC_DATA lpc;
+    double lpcCoeffs[16];
+    LPC_FILTER lpcfilt;
 } Synth;
 void ResetSynth(Synth *p);
 void SynthProcMidi(Synth *p, midi_msg msg);
-void SynthProcessBlock(Synth *p, float *bufl, float *bufr, int numSamples);
+void SynthProcessBlock(Synth *p, float *recl, float *recr, float *bufl, float *bufr, int numSamples);
