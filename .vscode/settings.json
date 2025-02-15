@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "midi.h": "c",
-        "cmath": "cpp"
-    }
-}

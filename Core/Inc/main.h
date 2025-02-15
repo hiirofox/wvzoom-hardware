@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2024 STMicroelectronics.
+  * Copyright (c) 2025 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -46,9 +46,6 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-
-#define MIDI_IN_PORTS_NUM   0x01 // Specify input ports number of your device
-#define MIDI_OUT_PORTS_NUM  0x01 // Specify output ports number of your device
 
 /* USER CODE END EM */
 
