@@ -195,10 +195,10 @@ void LPC_FilterPredictStereo(LPC_FILTER *filt,
 			suml += filt->yl[n] * a[k];
 			sumr += filt->yr[n] * a[k];
 		}
-		filt->yl[filt->pos] = inl[i] * errorv * 0.00005 + suml;
-		filt->yr[filt->pos] = inr[i] * errorv * 0.00005 + sumr;
-		outl[i] = filt->yl[filt->pos] * 50.0;
-		outr[i] = filt->yr[filt->pos] * 50.0;
+		filt->yl[filt->pos] = inl[i] * errorv * 0.0005 + suml;
+		filt->yr[filt->pos] = inr[i] * errorv * 0.0005 + sumr;
+		outl[i] = filt->yl[filt->pos] * 5.0;
+		outr[i] = filt->yr[filt->pos] * 5.0;
 		if (filt->yl[filt->pos] > 1.0)
 			filt->yl[filt->pos] = 1.0;
 		else if (filt->yl[filt->pos] < -1.0)

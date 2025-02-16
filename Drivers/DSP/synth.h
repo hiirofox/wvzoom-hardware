@@ -116,12 +116,15 @@ typedef struct
     SVFilter svfr[MaxPolyNum];
     LFO lfo1;
     LFO lfo2;
+
+    SVFilter outhpl[4];//如果喂lpc vocoder最好用个
+    SVFilter outhpr[4];
     int trigPos;
 
-#define MaxLPCBufLen 2048
+#define MaxLPCBufLen 4096
     float lpcbuf[MaxLPCBufLen];
     LPC_DATA lpc;
-    double lpcCoeffs[16];
+    double lpcCoeffs[32];
     LPC_FILTER lpcfilt;
 } Synth;
 void ResetSynth(Synth *p);

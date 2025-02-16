@@ -550,13 +550,22 @@ void SynthProcessBlock(Synth *p, float *recl, float *recr, float *bufl, float *b
         }
 
         float sum = suml + sumr;
-        bufl[i] = sum - p->param.dpan * (sum - suml);
-        bufr[i] = sum - p->param.dpan * (sum - sumr);
+        float outl1 = sum - p->param.dpan * (sum - suml);
+        float outr1 = sum - p->param.dpan * (sum - sumr);
+        float outl2 = outl1, outr2 = outr1;
+        const float hpctof = 40.0 / 48000.0;
+        for (int j = 0; j < 4; ++j)
+        {
+            outl2 = SVFProcLPF(&p->outhpl[j], outl2, hpctof, 0);
+            outr2 = SVFProcLPF(&p->outhpr[j], outr2, hpctof, 0);
+        }
+        bufl[i] = outl1 - outl2;
+        bufr[i] = outr1 - outr2;
     }
 
     // effects
     memcpy(&p->lpcbuf[0], &p->lpcbuf[numSamples], MaxLPCBufLen - numSamples);
     memcpy(&p->lpcbuf[MaxLPCBufLen - numSamples], &recl[0], numSamples);
     float errv = LPC_ProcDurbin(&p->lpc, p->lpcbuf, p->lpcCoeffs, MaxLPCBufLen, 16);
-    LPC_FilterPredictStereo(&p->lpcfilt, bufl, bufr, bufl, bufr, p->lpcCoeffs, numSamples, 16, errv);
+    LPC_FilterPredictStereo(&p->lpcfilt, bufl, bufr, bufl, bufr, p->lpcCoeffs, numSamples, 16, 30.0);
 }
